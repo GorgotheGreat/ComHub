@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>The Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#07070e}
+body{font-family:'DM Mono',monospace;color:#c8c8d0;overflow-x:hidden}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+a{color:inherit}
+#app{display:flex;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,rgba(0,230,100,0.04) 0%,transparent 60%)}
+#phone{width:100%;max-width:440px;min-height:100vh;background:#0d0d16;display:flex;flex-direction:column;position:relative;box-shadow:0 0 120px rgba(0,230,100,0.04),inset 0 0 0 1px rgba(255,255,255,0.03)}
+#statusbar{background:#07070e;padding:8px 18px 7px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #0f0f1e;flex-shrink:0}
+.brand{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:4px;color:#00e664}
+.sb-right{display:flex;align-items:center;gap:10px}
+.username{font-size:10px;color:#444;letter-spacing:1px}
+.st-badge{font-size:9px;color:#e6a030;letter-spacing:2px;background:rgba(230,160,48,0.1);padding:2px 6px;border-radius:3px;border:1px solid rgba(230,160,48,0.2)}
+.chr-badge{font-size:8px;color:#5a8fc8;letter-spacing:1px;background:rgba(90,143,200,0.1);padding:2px 7px;border-radius:3px;border:1px solid rgba(90,143,200,0.2);max-width:100px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.logout-btn{background:none;border:none;color:#333;padding:0;display:flex;align-items:center;transition:color 0.15s}
+.logout-btn:hover{color:#888}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+#tabbar{border-top:1px solid #141422;display:flex;background:#09090f;flex-shrink:0}
+.tab-btn{flex:1;padding:10px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;border-top:2px solid transparent;color:#383848;font-size:8px;letter-spacing:1.5px;transition:all 0.15s;position:relative}
+.tab-btn.active{color:#00e664;border-top-color:#00e664}
+.tab-btn.st-tab.active{color:#e6a030;border-top-color:#e6a030}
+.tab-badge{position:absolute;top:6px;right:calc(50% - 14px);background:#e65050;color:#fff;font-size:8px;font-weight:bold;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+#login-screen{background:#0d0d16;justify-content:center}
+.login-hero{padding:52px 32px 36px;text-align:center}
+.hub-word{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;letter-spacing:14px;color:#f0f0f8;line-height:1}
+.hub-sub{font-size:8px;letter-spacing:5px;color:#00e664;opacity:0.7;margin-bottom:12px}
+.login-div{width:36px;height:2px;background:linear-gradient(90deg,transparent,#00e664,transparent);margin:14px auto 10px}
+.tagline{font-size:8px;letter-spacing:2px;color:#222233}
+.login-form-wrap{padding:0 28px 40px;display:flex;flex-direction:column;gap:14px}
+.login-tabs{display:flex;border:1px solid #1a1a2e;border-radius:8px;overflow:hidden;margin-bottom:6px}
+.login-tab{flex:1;padding:10px;background:none;border:none;font-size:10px;letter-spacing:2px;color:#444;transition:all 0.15s}
+.login-tab.active{background:rgba(0,230,100,0.08);color:#00e664}
+.fl{font-size:9px;letter-spacing:2.5px;color:#444;display:block;margin-bottom:6px}
+.fi{width:100%;background:#0f0f1a;border:1px solid #1c1c2e;border-radius:7px;padding:11px 14px;color:#d0d0dc;font-size:13px;outline:none;transition:border-color 0.15s}
+.fi:focus{border-color:rgba(0,230,100,0.35)}
+.fi::placeholder{color:#2a2a3e}
+select.fi{appearance:none}
+.bp{width:100%;padding:12px;background:#00e664;color:#07070e;border:none;border-radius:7px;font-size:12px;font-weight:bold;letter-spacing:2px;transition:all 0.15s}
+.bp:hover{background:#00ff70}
+.bp.amber{background:#e6a030}
+.bp.amber:hover{background:#f0b040}
+.bp.purple{background:#8c50ff;color:#fff}
+.bp.purple:hover{background:#9960ff}
+.bs{padding:6px 12px;background:rgba(255,255,255,0.05);border:1px solid #222233;border-radius:5px;color:#888;font-size:10px;letter-spacing:1px;transition:all 0.15s}
+.bs.green{background:rgba(0,230,100,0.1);border-color:rgba(0,230,100,0.25);color:#00e664}
+.bs.red{background:rgba(230,80,80,0.1);border-color:rgba(230,80,80,0.25);color:#e65050}
+.bs.amber{background:rgba(230,160,48,0.1);border-color:rgba(230,160,48,0.25);color:#e6a030}
+.bs.purple{background:rgba(140,80,255,0.1);border-color:rgba(140,80,255,0.25);color:#8c50ff}
+.alrt{font-size:11px;padding:10px 13px;border-radius:6px;border:1px solid;line-height:1.5}
+.alrt.error{background:rgba(230,80,80,0.07);border-color:rgba(230,80,80,0.2);color:#e08080}
+.alrt.success{background:rgba(0,230,100,0.07);border-color:rgba(0,230,100,0.2);color:#00cc58}
+.sh{font-size:9px;letter-spacing:3px;color:#333;padding:12px 18px 10px;border-bottom:1px solid #101018;text-transform:uppercase;flex-shrink:0}
+.stabs{display:flex;border-bottom:1px solid #111120;background:#09090f;flex-shrink:0;overflow-x:auto}
+.stab{flex:1;min-width:fit-content;padding:10px 8px;background:none;border:none;border-bottom:2px solid transparent;color:#383848;font-size:9px;letter-spacing:1.5px;transition:all 0.15s;white-space:nowrap}
+.stab.active{color:#00e664;border-bottom-color:#00e664}
+.stab.amber.active{color:#e6a030;border-bottom-color:#e6a030}
+.stab.purple.active{color:#8c50ff;border-bottom-color:#8c50ff}
+.card{background:#111120;border:1px solid #181828;border-radius:10px;padding:15px;margin-bottom:10px}
+.cr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cr:last-child{margin-bottom:0}
+.cl{font-size:9px;letter-spacing:2px;color:#444}
+.cv{font-size:12px;color:#c0c0cc}
+.sa{flex:1;overflow-y:auto}
+.sa::-webkit-scrollbar{width:3px}
+.sa::-webkit-scrollbar-thumb{background:#1c1c2e;border-radius:2px}
+.pd{padding:16px 18px}
+.crow{padding:13px 18px;border-bottom:1px solid #0f0f1c;display:flex;align-items:center;gap:13px;transition:background 0.1s;position:relative;cursor:pointer}
+.crow:hover{background:#111120}
+.crow.unread{background:rgba(0,230,100,0.03)}
+.av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;flex-shrink:0;font-family:'Syne',sans-serif;position:relative}
+.ndot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#e65050;border:2px solid #0d0d16}
+.ci{flex:1;overflow:hidden}
+.cn{font-size:13px;color:#dcdce8;margin-bottom:2px}
+.ct{font-size:8px;letter-spacing:2px;margin-bottom:2px}
+.cp{font-size:10px;color:#333;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.cm{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.ctime{font-size:8px;color:#252535}
+.ubadge{background:#e65050;color:#fff;font-size:8px;font-weight:bold;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.chdr{padding:12px 16px;border-bottom:1px solid #141422;display:flex;align-items:center;gap:12px;background:#09090f;flex-shrink:0}
+.bbtn{background:none;border:none;color:#555;padding:0;display:flex;align-items:center;transition:color 0.15s}
+.bbtn:hover{color:#aaa}
+.mlist{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.mlist::-webkit-scrollbar{width:2px}
+.mlist::-webkit-scrollbar-thumb{background:#1c1c2e}
+.mw{display:flex;flex-direction:column}
+.mw.me{align-items:flex-end}
+.mw.them{align-items:flex-start}
+.msnd{font-size:8px;letter-spacing:1px;color:#383848;margin-bottom:3px;padding:0 4px}
+.mb{max-width:80%;padding:10px 13px;font-size:13px;line-height:1.55}
+.mw.me .mb{background:rgba(0,230,100,0.1);border:1px solid rgba(0,230,100,0.2);border-radius:12px 12px 2px 12px;color:#b8ffd8}
+.mw.them .mb{background:#141424;border:1px solid #1e1e32;border-radius:12px 12px 12px 2px;color:#b8b8cc}
+.mtime{font-size:8px;color:#252535;margin-top:3px;padding:0 4px}
+.mbar{padding:11px 14px;border-top:1px solid #141422;display:flex;gap:9px;background:#09090f;flex-shrink:0}
+.mbar input{flex:1;background:#111120;border:1px solid #1c1c2e;border-radius:20px;padding:9px 16px;color:#d0d0dc;font-size:13px;outline:none;transition:border-color 0.15s}
+.mbar input:focus{border-color:rgba(0,230,100,0.3)}
+.sbtn{width:38px;height:38px;border-radius:50%;background:#00e664;border:none;display:flex;align-items:center;justify-content:center;color:#07070e;flex-shrink:0;transition:background 0.15s}
+.sbtn:hover{background:#00ff70}
+.locpin{background:rgba(0,230,100,0.07);border:1px solid rgba(0,230,100,0.2);border-radius:8px;padding:10px;margin-top:2px}
+.pinh{display:flex;align-items:center;gap:6px;font-size:9px;color:#00e664;letter-spacing:2px;margin-bottom:8px}
+.mapf{border-radius:6px;overflow:hidden;height:130px;background:#0a0a12}
+.mapf iframe{display:block;border:none;width:100%;height:100%}
+.mapl{display:block;margin-top:6px;font-size:9px;color:#00e664;text-decoration:none;letter-spacing:1px;text-align:right;opacity:0.7}
+.mapl:hover{opacity:1}
+.bkhero{padding:22px 20px 18px;background:linear-gradient(135deg,#0c1710 0%,#0a120a 100%);border-bottom:1px solid rgba(0,230,100,0.08);flex-shrink:0}
+.bklbl{font-size:8px;letter-spacing:4px;color:rgba(0,230,100,0.5);margin-bottom:4px}
+.bkamt{font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:#00e664;letter-spacing:2px;line-height:1}
+.bksub{font-size:9px;color:#1e3a22;letter-spacing:2px;margin-top:5px}
+.cryhero{padding:20px;background:linear-gradient(135deg,#100d1e 0%,#0c0918 100%);border-bottom:1px solid rgba(140,80,255,0.1);flex-shrink:0}
+.synlogo{width:38px;height:38px;border-radius:50%;background:rgba(140,80,255,0.15);border:1px solid rgba(140,80,255,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#8c50ff}
+.synbal{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#c0a0ff;margin-top:10px}
+.synusd{font-size:11px;color:#443366;margin-top:3px}
+.snbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;text-align:center}
+.snico{width:72px;height:72px;border-radius:50%;background:rgba(0,230,100,0.07);border:2px solid rgba(0,230,100,0.15);display:flex;align-items:center;justify-content:center}
+.snlnk{display:inline-block;padding:14px 36px;background:#00e664;color:#07070e;border-radius:8px;font-size:11px;font-weight:bold;letter-spacing:3px;text-decoration:none;transition:background 0.15s}
+.snlnk:hover{background:#00ff70}
+.adh{padding:16px 18px;background:rgba(230,160,48,0.05);border-bottom:1px solid rgba(230,160,48,0.1);flex-shrink:0}
+.adt{font-size:8px;letter-spacing:4px;color:#e6a030;margin-bottom:3px}
+.adn{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#e6c070}
+.chrsw{display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid #0f0f1e;background:#08080f;flex-shrink:0;overflow-x:auto}
+.chrsw::-webkit-scrollbar{height:2px}
+.chrpill{padding:5px 12px;border-radius:20px;font-size:9px;letter-spacing:1.5px;border:1px solid #1c1c2e;background:none;color:#444;white-space:nowrap;transition:all 0.15s}
+.chrpill.active{background:rgba(230,160,48,0.12);border-color:rgba(230,160,48,0.3);color:#e6a030}
+.chrpill.add{border-style:dashed;color:#333}
+.chrpill.add:hover{color:#666;border-color:#333}
+#loader{position:fixed;inset:0;background:#07070e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
+.lbrand{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:12px;color:#f0f0f8}
+.lsub{font-size:8px;letter-spacing:5px;color:#00e664;opacity:0.6}
+.spin{width:24px;height:24px;border:2px solid #111120;border-top-color:#00e664;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.es{text-align:center;padding:48px 20px;font-size:10px;letter-spacing:2px;color:#252535}
+.tag{display:inline-block;font-size:8px;letter-spacing:2px;padding:2px 7px;border-radius:3px}
+.tag.green{background:rgba(0,230,100,0.1);color:#00e664;border:1px solid rgba(0,230,100,0.2)}
+.tag.amber{background:rgba(230,160,48,0.1);color:#e6a030;border:1px solid rgba(230,160,48,0.2)}
+.tag.red{background:rgba(230,80,80,0.1);color:#e65050;border:1px solid rgba(230,80,80,0.2)}
+.tag.purple{background:rgba(140,80,255,0.1);color:#8c50ff;border:1px solid rgba(140,80,255,0.2)}
+hr.dv{border:none;border-top:1px solid #111120;margin:14px 0}
+.tcol{display:flex;gap:10px}
+.tcol>*{flex:1}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111120;border:1px solid rgba(0,230,100,0.3);border-radius:10px;padding:12px 18px;font-size:11px;color:#00e664;z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,0.6);max-width:360px;width:90%;animation:tin 0.2s ease;letter-spacing:0.5px}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.cbrow{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer}
+.cbrow input{accent-color:#e6a030;width:14px;height:14px;cursor:pointer}
+.cbrow label{font-size:11px;color:#888;cursor:pointer}
+@media(max-width:440px){#phone{max-width:100%}}
+</style>
+</head>
+<body>
+<div id="loader">
+  <div class="lsub">CHRONICLE NETWORK</div>
+  <div class="lbrand">THE HUB</div>
+  <div class="spin"></div>
+</div>
+<div id="app" style="display:none">
+ <div id="phone">
+  <div id="statusbar" style="display:none">
+    <div class="brand">THE HUB</div>
+    <div class="sb-right">
+      <span class="chr-badge" id="sb-chr" style="display:none"></span>
+      <span class="username" id="sb-user"></span>
+      <span class="st-badge" id="sb-st" style="display:none">ST</span>
+      <button class="logout-btn" onclick="logout()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login-screen" class="screen active">
+    <div class="login-hero">
+      <div class="hub-sub">CHRONICLE NETWORK</div>
+      <div class="hub-word">THE HUB</div>
+      <div class="login-div"></div>
+      <div class="tagline">SECURE · IMMERSIVE · CONNECTED</div>
+    </div>
+    <div class="login-form-wrap">
+      <div class="login-tabs">
+        <button class="login-tab active" onclick="showLTab('in')">SIGN IN</button>
+        <button class="login-tab" onclick="showLTab('reg')">REGISTER</button>
+      </div>
+      <div id="lf-in">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div><label class="fl">CHARACTER NAME</label><input class="fi" id="li-n" type="text" placeholder="Your character's name" autocomplete="off"/></div>
+          <div><label class="fl">ACCESS CODE</label><input class="fi" id="li-c" type="password" placeholder="Code from your Storyteller"/></div>
+          <div id="li-err" class="alrt error" style="display:none"></div>
+          <button class="bp" onclick="doLogin()">CONNECT</button>
+        </div>
+      </div>
+      <div id="lf-reg" style="display:none">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div><label class="fl">CHARACTER NAME</label><input class="fi" id="rg-n" type="text" placeholder="Your character's name" autocomplete="off"/></div>
+          <div><label class="fl">CHRONICLE ACCESS CODE</label><input class="fi" id="rg-c" type="text" placeholder="Provided by your Storyteller"/></div>
+          <div id="rg-err" class="alrt error" style="display:none"></div>
+          <div id="rg-ok" class="alrt success" style="display:none"></div>
+          <button class="bp" id="rg-btn" onclick="doRegister()">REQUEST ACCESS</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MSG LIST -->
+  <div id="msg-list-screen" class="screen">
+    <div class="sh">CONTACTS &amp; THREADS</div>
+    <div class="sa" id="contacts-list"></div>
+  </div>
+
+  <!-- CONVO -->
+  <div id="convo-screen" class="screen" style="overflow:hidden">
+    <div class="chdr">
+      <button class="bbtn" onclick="closeConvo()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="av" id="c-av"></div>
+      <div><div id="c-nm" style="font-size:13px;color:#dcdce8"></div><div id="c-tp" style="font-size:8px;letter-spacing:2px"></div></div>
+    </div>
+    <div class="mlist" id="messages-list"></div>
+    <div class="mbar">
+      <input id="msg-input" type="text" placeholder="Message..." onkeydown="if(event.key==='Enter')sendMessage()"/>
+      <button class="sbtn" onclick="sendMessage()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>
+  </div>
+
+  <!-- BANK -->
+  <div id="bank-screen" class="screen">
+    <div class="bkhero"><div class="bklbl">CURRENT BALANCE</div><div class="bkamt" id="bk-bal">$0.00</div><div class="bksub">USD · HUB ACCOUNT</div></div>
+    <div class="stabs">
+      <button class="stab active" onclick="showBankTab('ov')">OVERVIEW</button>
+      <button class="stab" onclick="showBankTab('tx')">TRANSFER</button>
+    </div>
+    <div class="sa pd" id="bank-content"></div>
+  </div>
+
+  <!-- CRYPTO -->
+  <div id="crypto-screen" class="screen">
+    <div class="cryhero">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="synlogo">S</div>
+          <div><div style="font-size:12px;color:#c0a0ff;letter-spacing:1px">SYN · SynCoin</div><div style="font-size:8px;color:#443366;letter-spacing:1px">CHRONICLE CRYPTO NETWORK</div></div>
+        </div>
+        <div style="text-align:right"><div style="font-size:11px;color:#8c50ff" id="syn-rate-disp">$47.83 / SYN</div><div style="font-size:8px;color:#332255;letter-spacing:1px">MARKET RATE</div></div>
+      </div>
+      <div class="synbal" id="syn-bal">0.0000 <span style="font-size:14px;color:#8c50ff">SYN</span></div>
+      <div class="synusd" id="syn-usd">≈ $0.00 USD</div>
+    </div>
+    <div class="stabs">
+      <button class="stab purple active" onclick="showCryptoTab('wl')">WALLET</button>
+      <button class="stab purple" onclick="showCryptoTab('tx')">TRANSFER</button>
+      <button class="stab purple" onclick="showCryptoTab('co')">CASH OUT</button>
+    </div>
+    <div class="sa pd" id="crypto-content"></div>
+  </div>
+
+  <!-- SHREKNET -->
+  <div id="shreknet-screen" class="screen">
+    <div class="sh">EXTERNAL NETWORK</div>
+    <div class="snbody">
+      <div class="snico"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00e664" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+      <div><div style="font-size:16px;color:#c0c0cc;margin-bottom:8px;font-family:'Syne',sans-serif;font-weight:700">ShrekNet Terminal</div><div style="font-size:10px;color:#333;letter-spacing:1px;line-height:1.8">The in-world network.<br>Tap below to access.</div></div>
+      <a href="https://gorgothegreat.github.io/Shrek/" target="_blank" class="snlnk">ACCESS SHREKNET ↗</a>
+      <div style="font-size:8px;color:#1c1c2e;letter-spacing:1px">Opens in new tab</div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="admin-screen" class="screen">
+    <div class="adh"><div class="adt">STORYTELLER PANEL</div><div class="adn">Chronicle Administration</div></div>
+    <div class="chrsw" id="chr-sw"></div>
+    <div class="stabs">
+      <button class="stab amber active" onclick="showAdminTab('pl')">PLAYERS</button>
+      <button class="stab amber" onclick="showAdminTab('tx')">TRANSFERS</button>
+      <button class="stab amber" onclick="showAdminTab('ac')">ACCOUNTS</button>
+      <button class="stab amber" onclick="showAdminTab('sp')">SPCs</button>
+      <button class="stab amber" onclick="showAdminTab('st')">SETTINGS</button>
+    </div>
+    <div class="sa pd" id="admin-content"></div>
+  </div>
+
+  <!-- TABBAR -->
+  <div id="tabbar" style="display:none">
+    <button class="tab-btn active" id="tab-messages" onclick="switchTab('messages')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      MSG<span class="tab-badge" id="badge-msg" style="display:none">0</span>
+    </button>
+    <button class="tab-btn" id="tab-bank" onclick="switchTab('bank')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      BANK
+    </button>
+    <button class="tab-btn" id="tab-crypto" onclick="switchTab('crypto')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.5 9.5h3a2 2 0 0 1 0 4h-3v-4zm0 4h3.5a2 2 0 0 1 0 4H9.5v-4z"/><line x1="9.5" y1="7" x2="9.5" y2="17"/></svg>
+      SYN
+    </button>
+    <button class="tab-btn" id="tab-shreknet" onclick="switchTab('shreknet')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      NET
+    </button>
+    <button class="tab-btn st-tab" id="tab-admin" onclick="switchTab('admin')" style="display:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      ST<span class="tab-badge" id="badge-st" style="display:none">0</span>
+    </button>
+  </div>
+ </div>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://tppmmiqzefsglvjlhokp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwcG1taXF6ZWZzZ2x2amxob2twIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjU1NDMsImV4cCI6MjA4ODg0MTU0M30.yJR2UMNGhpAWTjgoOZsHUFMQ0u2Cu0CFPOze4xz3444';
+const ST_NAME = 'Storyteller';
+const ST_CODE = 'HUBMASTER';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let CU = null, CC = null, AC = null, AChrId = null;
+let curTab = 'messages', bTab = 'ov', cTab = 'wl', aTab = 'pl';
+let rtSub = null, unread = {}, contacts_cache = [];
+
+window.addEventListener('load', () => {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+});
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────
+async function reqNotif() {
+  if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+}
+function pushNotif(title, body) {
+  if (Notification.permission === 'granted') new Notification(title, { body });
+  showToast(`${title}: ${body}`);
+}
+function showToast(msg) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+function showLTab(t) {
+  document.getElementById('lf-in').style.display = t==='in'?'block':'none';
+  document.getElementById('lf-reg').style.display = t==='reg'?'block':'none';
+  document.querySelectorAll('.login-tab').forEach((b,i) => b.classList.toggle('active',(i===0&&t==='in')||(i===1&&t==='reg')));
+}
+
+async function doLogin() {
+  const name = document.getElementById('li-n').value.trim();
+  const code = document.getElementById('li-c').value.trim().toUpperCase();
+  const err = document.getElementById('li-err');
+  err.style.display = 'none';
+  if (!name||!code){showE(err,'Enter name and code.');return;}
+  if (name.toLowerCase()===ST_NAME.toLowerCase()&&code===ST_CODE){
+    CU={id:'st_admin',name:ST_NAME,role:'st',balance:0,syncoin:0};
+    await enterApp(); return;
+  }
+  const {data,error} = await sb.from('players').select('*').ilike('name',name).eq('access_code',code).single();
+  if (error||!data){showE(err,'Invalid credentials.');return;}
+  if (!data.approved){showE(err,'Pending ST approval.');return;}
+  CU = data;
+  const {data:ch} = await sb.from('chronicles').select('*').eq('id',data.chronicle_id).single();
+  CC = ch;
+  await enterApp();
+}
+
+async function doRegister() {
+  const name = document.getElementById('rg-n').value.trim();
+  const code = document.getElementById('rg-c').value.trim().toUpperCase();
+  const err = document.getElementById('rg-err'), ok = document.getElementById('rg-ok');
+  err.style.display='none'; ok.style.display='none';
+  if (!name){showE(err,'Enter your character name.');return;}
+  const {data:ch} = await sb.from('chronicles').select('*').eq('reg_code',code).maybeSingle();
+  if (!ch){showE(err,'Invalid chronicle access code.');return;}
+  const {data:ex} = await sb.from('players').select('id').ilike('name',name).eq('chronicle_id',ch.id).maybeSingle();
+  if (ex){showE(err,'Name taken in this chronicle.');return;}
+  const ac = 'HUB'+Math.random().toString(36).substring(2,7).toUpperCase();
+  const {error} = await sb.from('players').insert({name,access_code:ac,approved:false,balance:0,syncoin:0,chronicle_id:ch.id});
+  if (error){showE(err,'Failed. Try again.');return;}
+  document.getElementById('rg-btn').style.display='none';
+  ok.style.display='block';
+  ok.textContent=`Registered for "${ch.name}"! Your ST will approve and share your login code.`;
+}
+
+async function enterApp() {
+  await reqNotif();
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('statusbar').style.display='flex';
+  document.getElementById('tabbar').style.display='flex';
+  document.getElementById('sb-user').textContent=CU.name;
+  if (CU.role==='st'){
+    document.getElementById('sb-st').style.display='inline';
+    document.getElementById('tab-admin').style.display='flex';
+    const {data:chs} = await sb.from('chronicles').select('*').order('created_at');
+    if (chs&&chs.length) AChrId=chs[0].id;
+  } else {
+    const cb = document.getElementById('sb-chr');
+    if (CC){cb.textContent=CC.name.toUpperCase();cb.style.display='inline';}
+  }
+  setupRT();
+  switchTab('messages');
+}
+
+function logout() {
+  if (rtSub) sb.removeChannel(rtSub);
+  rtSub=null; CU=null; CC=null; AC=null; unread={}; contacts_cache=[];
+  document.getElementById('statusbar').style.display='none';
+  document.getElementById('tabbar').style.display='none';
+  document.getElementById('tab-admin').style.display='none';
+  document.getElementById('sb-chr').style.display='none';
+  ['msg-list-screen','convo-screen','bank-screen','crypto-screen','shreknet-screen','admin-screen'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('login-screen').classList.add('active');
+  document.getElementById('li-n').value='';
+  document.getElementById('li-c').value='';
+}
+
+// ── REALTIME ──────────────────────────────────────────────────
+function setupRT() {
+  if (rtSub) sb.removeChannel(rtSub);
+  rtSub = sb.channel('hub-rt')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},onMsg)
+    .subscribe();
+}
+
+function onMsg(payload) {
+  const msg = payload.new;
+  const myId = String(CU.id);
+  const toId = String(msg.to_id);
+  const fromId = String(msg.from_id);
+  if (fromId===myId) return;
+  const isSpc = toId.startsWith('spc_');
+  const isForMe = toId===myId;
+  const stSeesSpc = CU.role==='st' && isSpc;
+  if (!isForMe && !stSeesSpc) return;
+  const cid = isForMe ? fromId : toId;
+  unread[cid] = (unread[cid]||0) + 1;
+  if (AC && String(AC.id)===cid) {
+    loadMessages();
+    unread[cid]=0;
+  } else {
+    const who = isForMe ? msg.from_name : msg.from_name;
+    const target = isSpc ? ` → ${msg.to_name}` : '';
+    pushNotif(who+target, msg.content.substring(0,60));
+    updBadge();
+    if (curTab==='messages') renderContacts();
+    if (curTab==='admin') renderAdmin();
+  }
+}
+
+function updBadge() {
+  const total = Object.values(unread).reduce((a,b)=>a+b,0);
+  const bid = CU.role==='st'?'badge-st':'badge-msg';
+  const b = document.getElementById(bid);
+  if (!b) return;
+  if (total>0){b.textContent=total>99?'99+':total;b.style.display='flex';}
+  else b.style.display='none';
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  curTab=tab;
+  const map={messages:'msg-list-screen',bank:'bank-screen',crypto:'crypto-screen',shreknet:'shreknet-screen',admin:'admin-screen'};
+  Object.entries(map).forEach(([t,id])=>document.getElementById(id).classList.toggle('active',t===tab));
+  document.getElementById('convo-screen').classList.remove('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  if (tab==='messages') renderContacts();
+  if (tab==='bank') renderBank();
+  if (tab==='crypto') renderCrypto();
+  if (tab==='admin') renderAdmin();
+}
+
+// ── CONTACTS ──────────────────────────────────────────────────
+async function getContacts() {
+  const cs=[];
+  const {data:spcs} = await sb.from('spcs').select('*');
+  if (CU.role==='st') {
+    if (AChrId) {
+      const {data:pl} = await sb.from('players').select('*').eq('approved',true).eq('chronicle_id',AChrId);
+      (pl||[]).forEach(p=>cs.push({id:String(p.id),name:p.name,tl:'PLAYER',col:'#5a8fc8',av:p.name[0].toUpperCase()}));
+    }
+    (spcs||[]).forEach(s=>{
+      const cids=s.chronicle_ids||[];
+      if (!AChrId||cids.length===0||cids.includes(AChrId))
+        cs.push({id:String(s.id),name:s.name,tl:'SPC',col:s.color||'#c8a96e',av:s.name[0].toUpperCase()});
+    });
+  } else {
+    const {data:pl} = await sb.from('players').select('*').eq('approved',true).eq('chronicle_id',CU.chronicle_id).neq('id',CU.id);
+    (pl||[]).forEach(p=>cs.push({id:String(p.id),name:p.name,tl:'PLAYER',col:'#5a8fc8',av:p.name[0].toUpperCase()}));
+    cs.push({id:'st_admin',name:'Storyteller',tl:'STORYTELLER',col:'#e6a030',av:'ST'});
+    (spcs||[]).forEach(s=>{
+      const cids=s.chronicle_ids||[];
+      if (cids.length===0||cids.includes(CU.chronicle_id))
+        cs.push({id:String(s.id),name:s.name,tl:'SPC',col:s.color||'#c8a96e',av:s.name[0].toUpperCase()});
+    });
+  }
+  return cs;
+}
+
+async function renderContacts() {
+  const list = document.getElementById('contacts-list');
+  const cs = await getContacts();
+  if (!cs.length){list.innerHTML='<div class="es">NO CONTACTS AVAILABLE</div>';return;}
+  const withMeta = await Promise.all(cs.map(async c=>{
+    const cid=getConvoId(CU.id,c.id);
+    const {data:msgs} = await sb.from('messages').select('from_name,content,created_at').eq('convo_id',cid).order('created_at',{ascending:false}).limit(1);
+    return {...c,last:msgs&&msgs[0]||null,ur:unread[c.id]||0};
+  }));
+  withMeta.sort((a,b)=>{
+    if (a.ur>0&&b.ur===0) return -1;
+    if (b.ur>0&&a.ur===0) return 1;
+    return (b.last?new Date(b.last.created_at).getTime():0)-(a.last?new Date(a.last.created_at).getTime():0);
+  });
+  list.innerHTML = withMeta.map(c=>`
+    <div class="crow${c.ur>0?' unread':''}" onclick='openConvo(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+      <div class="av" style="background:${c.col}18;border:1px solid ${c.col}33;color:${c.col}">${c.av}${c.ur>0?'<div class="ndot"></div>':''}</div>
+      <div class="ci">
+        <div class="cn">${esc(c.name)}</div>
+        <div class="ct" style="color:${c.col}">${c.tl}</div>
+        <div class="cp">${c.last?esc(c.last.from_name)+': '+esc(c.last.content.substring(0,40)):'No messages yet'}</div>
+      </div>
+      <div class="cm">
+        ${c.last?`<div class="ctime">${fmt(c.last.created_at)}</div>`:''}
+        ${c.ur>0?`<div class="ubadge">${c.ur}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ── CONVERSATION ──────────────────────────────────────────────
+function getConvoId(a,b){return [String(a),String(b)].sort().join('::')}
+
+async function openConvo(c) {
+  AC=c; unread[c.id]=0; updBadge();
+  document.getElementById('msg-list-screen').classList.remove('active');
+  document.getElementById('convo-screen').classList.add('active');
+  document.getElementById('c-nm').textContent=c.name;
+  document.getElementById('c-tp').textContent=c.tl;
+  document.getElementById('c-tp').style.color=c.col;
+  const av=document.getElementById('c-av');
+  av.textContent=c.av; av.style.background=c.col+'18'; av.style.border='1px solid '+c.col+'33'; av.style.color=c.col;
+  await loadMessages();
+}
+
+function closeConvo(){AC=null;document.getElementById('convo-screen').classList.remove('active');document.getElementById('msg-list-screen').classList.add('active');renderContacts();}
+
+async function loadMessages() {
+  if (!AC) return;
+  const cid=getConvoId(CU.id,AC.id);
+  const {data} = await sb.from('messages').select('*').eq('convo_id',cid).order('created_at',{ascending:true});
+  const list=document.getElementById('messages-list');
+  const atBot = list.scrollHeight-list.clientHeight<=list.scrollTop+80;
+  list.innerHTML=(data||[]).map(m=>{
+    const me=String(m.from_id)===String(CU.id);
+    const loc=parseLoc(m.content);
+    const cont=loc?renderPin(m.content,loc):esc(m.content);
+    return `<div class="mw ${me?'me':'them'}">${!me?`<div class="msnd">${esc(m.from_name)}</div>`:''}<div class="mb">${cont}</div><div class="mtime">${fmt(m.created_at)}</div></div>`;
+  }).join('')||'<div class="es" style="padding-top:60px">NO MESSAGES YET</div>';
+  if (atBot||!data||!data.length) list.scrollTop=list.scrollHeight;
+}
+
+async function sendMessage() {
+  const inp=document.getElementById('msg-input');
+  const txt=inp.value.trim();
+  if (!txt||!AC) return;
+  inp.value='';
+  const cid=getConvoId(CU.id,AC.id);
+  await sb.from('messages').insert({convo_id:cid,from_id:String(CU.id),from_name:CU.name,to_id:String(AC.id),to_name:AC.name,content:txt});
+  await loadMessages();
+}
+
+// ── LOCATION ──────────────────────────────────────────────────
+function parseLoc(t){const m=t.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);return m?{lat:m[1],lng:m[2]}:null;}
+function renderPin(t,l){
+  return `<div class="locpin"><div class="pinh"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>PINNED · ${l.lat}, ${l.lng}</div><div class="mapf"><iframe src="https://maps.google.com/maps?q=${l.lat},${l.lng}&z=15&output=embed" loading="lazy" title="map"></iframe></div><a href="https://www.google.com/maps?q=${l.lat},${l.lng}" target="_blank" class="mapl">OPEN IN GOOGLE MAPS ↗</a></div>`;
+}
+
+// ── BANK ──────────────────────────────────────────────────────
+async function refUser(){if(CU.role==='st')return;const {data}=await sb.from('players').select('balance,syncoin').eq('id',CU.id).single();if(data){CU.balance=data.balance;CU.syncoin=data.syncoin;}}
+
+function showBankTab(t){bTab=t;document.querySelectorAll('#bank-screen .stab').forEach((b,i)=>b.classList.toggle('active',i===(t==='ov'?0:1)));renderBank();}
+
+async function renderBank(){
+  await refUser();
+  document.getElementById('bk-bal').textContent='$'+(CU.balance||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const el=document.getElementById('bank-content');
+  if (bTab==='ov'){
+    el.innerHTML=`<div class="card"><div class="cr"><span class="cl">ACCOUNT HOLDER</span><span class="cv">${esc(CU.name)}</span></div><div class="cr"><span class="cl">CHRONICLE</span><span class="cv">${esc(CC?.name||'—')}</span></div><div class="cr"><span class="cl">STATUS</span><span class="tag green">● ACTIVE</span></div></div><div style="font-size:9px;color:#252535;letter-spacing:1px;text-align:center;margin-top:8px">Transfers require Storyteller approval</div>`;
+  } else {
+    el.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:14px">INITIATE TRANSFER</div><div style="display:flex;flex-direction:column;gap:12px"><div><label class="fl">RECIPIENT NAME</label><input class="fi" id="tx-to" placeholder="Character or SPC name"/></div><div><label class="fl">AMOUNT (USD)</label><input class="fi" id="tx-amt" type="number" min="0" step="0.01" placeholder="0.00"/></div><div id="tx-err" class="alrt error" style="display:none"></div><button class="bp" onclick="submitTx()">SUBMIT FOR APPROVAL</button><div style="font-size:9px;color:#252535;letter-spacing:1px;text-align:center">All transfers require ST approval</div></div>`;
+  }
+}
+
+async function submitTx(){
+  const to=document.getElementById('tx-to').value.trim();
+  const amt=parseFloat(document.getElementById('tx-amt').value);
+  const err=document.getElementById('tx-err');err.style.display='none';
+  if (!to||!amt||amt<=0){showE(err,'Enter recipient and amount.');return;}
+  const {data:my}=await sb.from('players').select('balance').eq('id',CU.id).single();
+  if ((my?.balance||0)<amt){showE(err,'Insufficient funds.');return;}
+  let rid,rn;
+  const {data:p}=await sb.from('players').select('id,name').ilike('name',to).eq('chronicle_id',CU.chronicle_id).maybeSingle();
+  if (p){rid=p.id;rn=p.name;}
+  else {const {data:s}=await sb.from('spcs').select('id,name').ilike('name',to).maybeSingle();if(s){rid=s.id;rn=s.name;}}
+  if (!rid){showE(err,'Recipient not found.');return;}
+  await sb.from('pending_transfers').insert({from_id:CU.id,from_name:CU.name,to_id:rid,to_name:rn,amount:amt,chronicle_id:CU.chronicle_id});
+  document.getElementById('tx-to').value='';document.getElementById('tx-amt').value='';
+  alert('Transfer submitted for ST approval.');
+}
+
+// ── CRYPTO ────────────────────────────────────────────────────
+function getRate(){return CC?.syn_rate||47.83;}
+
+function showCryptoTab(t){cTab=t;document.querySelectorAll('#crypto-screen .stab').forEach((b,i)=>b.classList.toggle('active',['wl','tx','co'][i]===t));renderCrypto();}
+
+async function renderCrypto(){
+  await refUser();
+  const rate=getRate();
+  const syn=CU.syncoin||0;
+  document.getElementById('syn-rate-disp').textContent=`$${rate} / SYN`;
+  document.getElementById('syn-bal').innerHTML=syn.toFixed(4)+' <span style="font-size:14px;color:#8c50ff">SYN</span>';
+  document.getElementById('syn-usd').textContent='≈ $'+(syn*rate).toFixed(2)+' USD';
+  const el=document.getElementById('crypto-content');
+  if (cTab==='wl'){
+    el.innerHTML=`<div class="card"><div class="cl" style="margin-bottom:8px">WALLET ADDRESS</div><div style="font-size:10px;color:#6644aa;word-break:break-all;background:#0a0a12;padding:10px;border-radius:5px;border:1px solid #1a1a2e">SYN${String(CU.id).substring(0,8).toUpperCase()}...</div></div><div class="card" style="background:rgba(140,80,255,0.05);border-color:rgba(140,80,255,0.15)"><div class="cl">NETWORK STATUS</div><div style="font-size:11px;color:#6644aa;margin-top:6px">● SYNCHAIN MAINNET · ONLINE</div></div>`;
+  } else if (cTab==='tx'){
+    el.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:14px">TRANSFER SYN</div><div style="display:flex;flex-direction:column;gap:12px"><div><label class="fl">RECIPIENT</label><input class="fi" id="sy-to" placeholder="Character name"/></div><div><label class="fl">AMOUNT (SYN)</label><input class="fi" id="sy-amt" type="number" min="0" step="0.0001" placeholder="0.0000"/></div><button class="bp purple" onclick="submitSyn()">SEND SYN</button></div>`;
+  } else {
+    el.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:14px">CASH OUT TO BANK</div><div class="card" style="background:rgba(0,230,100,0.05);border-color:rgba(0,230,100,0.15)"><div class="cl">CONVERSION RATE</div><div style="font-size:18px;color:#00e664;margin-top:4px">1 SYN = $${rate} USD</div></div><div style="display:flex;flex-direction:column;gap:12px"><div><label class="fl">AMOUNT (SYN)</label><input class="fi" id="co-amt" type="number" min="0" step="0.0001" placeholder="0.0000" oninput="document.getElementById('co-prev').textContent=this.value?'≈ $'+(parseFloat(this.value||0)*${rate}).toFixed(2)+' USD':''"/></div><div id="co-prev" style="font-size:10px;color:#444"></div><button class="bp" onclick="submitCo()">CASH OUT TO BANK</button></div>`;
+  }
+}
+
+async function submitSyn(){
+  const to=document.getElementById('sy-to').value.trim(),amt=parseFloat(document.getElementById('sy-amt').value);
+  if (!to||!amt||amt<=0){alert('Enter recipient and amount.');return;}
+  const {data:my}=await sb.from('players').select('syncoin').eq('id',CU.id).single();
+  if ((my?.syncoin||0)<amt){alert('Insufficient SYN.');return;}
+  const {data:p}=await sb.from('players').select('id,syncoin').ilike('name',to).maybeSingle();
+  if (!p){alert('Recipient not found.');return;}
+  await sb.from('players').update({syncoin:my.syncoin-amt}).eq('id',CU.id);
+  await sb.from('players').update({syncoin:(p.syncoin||0)+amt}).eq('id',p.id);
+  CU.syncoin=my.syncoin-amt; renderCrypto();
+}
+
+async function submitCo(){
+  const amt=parseFloat(document.getElementById('co-amt').value);
+  if (!amt||amt<=0){alert('Enter an amount.');return;}
+  const {data}=await sb.from('players').select('syncoin,balance').eq('id',CU.id).single();
+  if ((data?.syncoin||0)<amt){alert('Insufficient SYN.');return;}
+  const usd=amt*getRate();
+  await sb.from('players').update({syncoin:data.syncoin-amt,balance:data.balance+usd}).eq('id',CU.id);
+  CU.syncoin=data.syncoin-amt; CU.balance=data.balance+usd;
+  renderCrypto(); alert(`Cashed out ${amt} SYN → $${usd.toFixed(2)} USD`);
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────
+async function renderChrSw(){
+  const {data:chs}=await sb.from('chronicles').select('*').order('created_at');
+  document.getElementById('chr-sw').innerHTML=
+    (chs||[]).map(c=>`<button class="chrpill${c.id===AChrId?' active':''}" onclick="swChr('${c.id}')">${esc(c.name)}</button>`).join('')+
+    `<button class="chrpill add" onclick="newChr()">+ NEW</button>`;
+}
+
+async function swChr(id){AChrId=id;await renderChrSw();renderAdmin();}
+
+async function newChr(){
+  const name=prompt('Chronicle name:');if(!name)return;
+  const rc='CHR'+Math.random().toString(36).substring(2,8).toUpperCase();
+  const {data,error}=await sb.from('chronicles').insert({name:name.trim(),reg_code:rc,syn_rate:47.83}).select().single();
+  if (error){alert('Failed.');return;}
+  AChrId=data.id; await renderChrSw(); renderAdmin();
+  alert(`"${name}" created!\nReg code: ${rc}\nShare with players to join.`);
+}
+
+function showAdminTab(t){aTab=t;document.querySelectorAll('#admin-screen .stab').forEach((b,i)=>b.classList.toggle('active',['pl','tx','ac','sp','st'][i]===t));renderAdmin();}
+
+async function renderAdmin(){
+  await renderChrSw();
+  const el=document.getElementById('admin-content');
+  if (!AChrId){el.innerHTML='<div class="es">No chronicles yet. Create one above.</div>';return;}
+  const {data:ch}=await sb.from('chronicles').select('*').eq('id',AChrId).single();
+
+  if (aTab==='pl'){
+    const {data:pl}=await sb.from('players').select('*').eq('chronicle_id',AChrId).order('approved');
+    const pend=(pl||[]).filter(p=>!p.approved), act=(pl||[]).filter(p=>p.approved);
+    // Unread summary
+    const urItems=Object.entries(unread).filter(([,v])=>v>0);
+    const urHtml=urItems.length?`<div style="margin-bottom:14px"><div style="font-size:9px;color:#e6a030;letter-spacing:2px;margin-bottom:8px">UNREAD MESSAGES</div>${urItems.map(([id,n])=>{const name=contacts_cache.find?.(c=>c.id===id)?.name||id;return `<div class="card" style="padding:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openConvoById('${id}')"><span style="font-size:11px;color:#d0d0d0">${esc(name)}</span><span class="ubadge">${n}</span></div>`;}).join('')}</div><hr class="dv"/>`:''
+    el.innerHTML=urHtml+
+      `<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:12px">PENDING APPROVAL</div>
+      ${!pend.length?'<div class="es" style="padding:16px 0">NONE</div>':pend.map(p=>`<div class="card" style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:13px;color:#d0d0d0">${esc(p.name)}</div><div style="font-size:9px;color:#555;margin-top:2px">CODE: ${p.access_code}</div></div><button class="bs green" onclick="approvePl('${p.id}')">APPROVE</button></div>`).join('')}
+      <hr class="dv"/>
+      <div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:12px">ACTIVE PLAYERS</div>
+      ${!act.length?'<div class="es" style="padding:16px 0">NONE</div>':act.map(p=>`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:13px;color:#dcdce8">${esc(p.name)}</div><span class="tag green">● ACTIVE</span></div><div style="display:flex;gap:14px;flex-wrap:wrap"><span style="font-size:9px;color:#444">CODE: <span style="color:#666">${p.access_code}</span></span><span style="font-size:9px;color:#444">BAL: <span style="color:#00e664">$${(p.balance||0).toFixed(2)}</span></span><span style="font-size:9px;color:#444">SYN: <span style="color:#8c50ff">${(p.syncoin||0).toFixed(2)}</span></span></div></div>`).join('')}`;
+
+  } else if (aTab==='tx'){
+    const {data:txs}=await sb.from('pending_transfers').select('*').eq('chronicle_id',AChrId).order('created_at');
+    el.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:12px">PENDING TRANSFERS</div>
+      ${!(txs&&txs.length)?'<div class="es" style="padding:20px 0">NONE</div>':txs.map(tx=>`<div class="card"><div style="font-size:12px;color:#d0d0d0;margin-bottom:4px">${esc(tx.from_name)} → ${esc(tx.to_name)}</div><div style="font-size:20px;color:#00e664;margin-bottom:10px;font-family:'Syne',sans-serif;font-weight:700">$${parseFloat(tx.amount).toFixed(2)}</div><div style="display:flex;gap:8px"><button class="bs green" style="flex:1" onclick="approveTx('${tx.id}','${tx.from_id}','${tx.to_id}',${tx.amount})">APPROVE</button><button class="bs red" style="flex:1" onclick="denyTx('${tx.id}')">DENY</button></div></div>`).join('')}`;
+
+  } else if (aTab==='ac'){
+    const {data:pl}=await sb.from('players').select('*').eq('approved',true).eq('chronicle_id',AChrId);
+    el.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:12px">CREDIT / DEBIT</div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+        <div><label class="fl">PLAYER</label><select class="fi" id="ac-pl"><option value="">Select...</option>${(pl||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+        <div class="tcol">
+          <div><label class="fl">TYPE</label><select class="fi" id="ac-ty"><option value="credit">Credit (+)</option><option value="debit">Debit (-)</option></select></div>
+          <div><label class="fl">AMOUNT (USD)</label><input class="fi" id="ac-amt" type="number" min="0" step="0.01" placeholder="0.00"/></div>
+        </div>
+        <button class="bp amber" onclick="applyCredit()">APPLY</button>
+      </div>
+      <hr class="dv"/>
+      <div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:12px">AWARD SYNCOIN</div>
+      ${(pl||[]).map(p=>`<div class="card" style="display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:12px;color:#d0d0d0">${esc(p.name)}</div><div style="font-size:10px;color:#8c50ff;margin-top:2px">${(p.syncoin||0).toFixed(4)} SYN</div></div><div style="display:flex;gap:6px">${[1,5,10].map(n=>`<button class="bs purple" onclick="awardSyn('${p.id}',${n},${p.syncoin||0})">+${n}</button>`).join('')}</div></div>`).join('')}`;
+
+  } else if (aTab==='sp'){
+    const {data:spcs}=await sb.from('spcs').select('*');
+    const {data:chs}=await sb.from('chronicles').select('id,name');
+    el.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:12px">SPC CONTACTS</div>
+      ${(spcs||[]).map(s=>{
+        const cids=s.chronicle_ids||[];
+        return `<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="av" style="background:${s.color}18;border:1px solid ${s.color}33;color:${s.color};width:34px;height:34px;font-size:14px;flex-shrink:0">${s.name[0].toUpperCase()}</div><div style="font-size:13px;color:#d0d0d0">${esc(s.name)}</div></div>
+        <div style="font-size:9px;color:#444;letter-spacing:1px;margin-bottom:6px">CHRONICLES (unchecked all = global)</div>
+        ${(chs||[]).map(c=>`<div class="cbrow"><input type="checkbox" id="spc-${s.id}-${c.id}" ${cids.includes(c.id)?'checked':''} onchange="toggleSpcChr('${s.id}','${c.id}',this.checked,${JSON.stringify(cids)})"/><label for="spc-${s.id}-${c.id}">${esc(c.name)}</label></div>`).join('')}
+        </div>`;
+      }).join('')}
+      <div style="display:flex;gap:9px;margin-top:10px"><input class="fi" id="new-spc" placeholder="New SPC name..." style="flex:1"/><button class="bp amber" style="width:46px;padding:0" onclick="addSpc()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>`;
+
+  } else if (aTab==='st'){
+    el.innerHTML=`<div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:12px">CHRONICLE SETTINGS</div>
+      <div class="card"><div class="cr"><span class="cl">NAME</span><span class="cv">${esc(ch?.name||'')}</span></div><div class="cr"><span class="cl">REG CODE</span><span class="cv" style="color:#e6a030;letter-spacing:1px">${ch?.reg_code||'—'}</span></div></div>
+      <div style="font-size:9px;letter-spacing:2px;color:#444;margin:16px 0 10px">SYNCOIN EXCHANGE RATE</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><label class="fl">USD PER 1 SYN</label><input class="fi" id="sy-rate" type="number" min="0" step="0.01" value="${ch?.syn_rate||47.83}" placeholder="47.83"/></div>
+        <button class="bp purple" onclick="saveSynRate()">SAVE RATE</button>
+      </div>
+      <hr class="dv"/>
+      <div style="font-size:9px;letter-spacing:2px;color:#444;margin-bottom:10px">REGENERATE REG CODE</div>
+      <button class="bp amber" onclick="regenCode()">GENERATE NEW CODE</button>
+      <div style="font-size:9px;color:#252535;letter-spacing:1px;text-align:center;margin-top:8px">Old code stops working immediately</div>`;
+  }
+}
+
+async function openConvoById(id) {
+  const cs = await getContacts();
+  const c = cs.find(x=>x.id===id);
+  if (!c) return;
+  switchTab('messages');
+  setTimeout(()=>openConvo(c),100);
+}
+
+async function approvePl(id){await sb.from('players').update({approved:true}).eq('id',id);renderAdmin();}
+async function approveTx(txId,fromId,toId,amt){
+  const {data:fp}=await sb.from('players').select('balance').eq('id',fromId).single();
+  if (!fp||fp.balance<amt){alert('Insufficient funds.');return;}
+  await sb.from('players').update({balance:fp.balance-amt}).eq('id',fromId);
+  const {data:tp}=await sb.from('players').select('balance').eq('id',toId).maybeSingle();
+  if (tp) await sb.from('players').update({balance:(tp.balance||0)+amt}).eq('id',toId);
+  await sb.from('pending_transfers').delete().eq('id',txId);
+  renderAdmin();
+}
+async function denyTx(id){await sb.from('pending_transfers').delete().eq('id',id);renderAdmin();}
+async function applyCredit(){
+  const pid=document.getElementById('ac-pl').value,type=document.getElementById('ac-ty').value,amt=parseFloat(document.getElementById('ac-amt').value);
+  if (!pid||!amt){alert('Select player and amount.');return;}
+  const {data}=await sb.from('players').select('balance').eq('id',pid).single();
+  await sb.from('players').update({balance:Math.max(0,(data?.balance||0)+(type==='credit'?amt:-amt))}).eq('id',pid);
+  renderAdmin();
+}
+async function awardSyn(pid,n,cur){await sb.from('players').update({syncoin:cur+n}).eq('id',pid);renderAdmin();}
+async function addSpc(){
+  const name=document.getElementById('new-spc').value.trim();if(!name)return;
+  const cols=['#c8a96e','#7eb8c8','#c87e7e','#9ec87e','#c87ec8','#7ec8b8'];
+  const {data:ex}=await sb.from('spcs').select('id');
+  await sb.from('spcs').insert({name,color:cols[(ex?.length||0)%cols.length],chronicle_ids:[]});
+  document.getElementById('new-spc').value=''; renderAdmin();
+}
+async function toggleSpcChr(spcId,chrId,checked,cur){
+  let ids=[...cur];
+  if (checked&&!ids.includes(chrId)) ids.push(chrId);
+  else if (!checked) ids=ids.filter(x=>x!==chrId);
+  await sb.from('spcs').update({chronicle_ids:ids}).eq('id',spcId);
+}
+async function saveSynRate(){
+  const rate=parseFloat(document.getElementById('sy-rate').value);
+  if (!rate||rate<=0){alert('Enter valid rate.');return;}
+  await sb.from('chronicles').update({syn_rate:rate}).eq('id',AChrId);
+  alert(`Rate updated: $${rate} / SYN`); renderAdmin();
+}
+async function regenCode(){
+  if (!confirm('Regenerate registration code?')) return;
+  const rc='CHR'+Math.random().toString(36).substring(2,8).toUpperCase();
+  await sb.from('chronicles').update({reg_code:rc}).eq('id',AChrId);
+  alert(`New code: ${rc}`); renderAdmin();
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function showE(el,msg){el.textContent=msg;el.style.display='block';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(ts){const d=new Date(ts),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString([],{month:'short',day:'numeric'});}
+</script>
+</body>
+</html>
